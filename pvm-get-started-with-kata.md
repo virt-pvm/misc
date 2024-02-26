@@ -1,22 +1,23 @@
 This document provides an overview on how to run Kata Containers with PVM hypervisor.
-## Introduction
+# Introduction
 
 ---
 
 `PVM`is a software virtualization technology that is purpose-built to support Kata Containers without the need for hardware virtualization assistance. It is designed as a vendor for KVM, similar to Intel and AMD, making it compatible with the software stack in Kata Containers.
-## Pre-requisites
+
+# Pre-requisites
 
 ---
 
-This document requires the presence of Kata Containers and Containerd on your system. If you have the necessary environment set up, you can proceed directly to the [PVM configuration](#ILtus).
+This document requires the presence of Kata Containers and Containerd on your system. If you have the necessary environment set up, you can proceed directly to the [PVM configuration](#configure-pvm).
 
-Since the PVM hypervisor is based on `Linux kernel 6.7-rc6`, if you only want to test it, we also provide a pre-configured VM image with Kata Containers and PVM. You can directly proceed to [verify using the VM image](#trbiG).
-## Configure Kata Containers and Containerd
+Since the PVM hypervisor is based on `Linux kernel 6.7-rc6`, if you only want to test it, we also provide a pre-configured VM image with Kata Containers and PVM. You can directly proceed to [verify using the VM image](#verify-the-installation-with-kvm).
+# Configure Kata Containers and Containerd
 
 ---
 
 You can follow the [offical guide](https://github.com/kata-containers/kata-containers/blob/main/docs/install/README.md) to install Kata Containers with Containerd. Here, we will the step-by-step [manual installation](https://github.com/kata-containers/kata-containers/blob/main/docs/install/container-manager/containerd/containerd-install.md) process of Kata Containers with Containerd.
-### Install Kata Containers.
+## Install Kata Containers.
 
 ---
 
@@ -43,7 +44,7 @@ Check installation by showing version details:
 ```bash
 $ kata-runtime --version
 ```
-### Install Containerd
+## Install Containerd
 
 ---
 
@@ -92,19 +93,21 @@ Next, add the Kata Containers configuration to the Containerd configuration file
 $ sudo mkdir -p /etc/containerd
 $ sudo containerd config default >> /etc/containerd/config.toml
 ```
-Add the following content into the configuration file under `[plugins."io.containerd.grpc.v1.cri".containerd.runtimes]`** **section. This will configure Containerd to use the Kata runtime.
-> **[plugins."io.containerd.grpc.v1.cri".containerd.runtimes]**
-> **   [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.kata]**
->       runtime_type = "io.containerd.kata.v2"
-> **   [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.kata-clh]**
->       runtime_type = "io.containerd.kata-clh.v2"
+Add the following content into the configuration file under `[plugins."io.containerd.grpc.v1.cri".containerd.runtimes]`section. This will configure Containerd to use the Kata runtime.
+```
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes]  
+    [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.kata]  
+       runtime_type = "io.containerd.kata.v2"  
+    [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.kata-clh]  
+       runtime_type = "io.containerd.kata-clh.v2"
+```
 
 Finally, start the Containerd service.
 ```bash
 $ sudo systemctl start containerd
 $ sudo systemctl enable containerd
 ```
-### Verify the installation with KVM
+## Verify the installation with KVM
 
 ---
 
@@ -123,18 +126,21 @@ $ sudo ctr run --runtime "io.containerd.kata.v2" --rm -t "$image" test-kata date
 $ sudo ctr run --runtime "io.containerd.kata-clh.v2" --rm -t "$image" test-kata date
 ```
 	The last command above will show date information in container.
-## Configure PVM
+# Configure PVM
 
 ---
 
 The PVM hypervisor is a Linux kernel module based on KVM. Currently, it is maintained privately and is not part of the Linux tree. We are working on merging it upstream as soon as possible. In the meantime, it requires a customized guest kernel as well.
-### Install PVM hypervisor
+## Install PVM hypervisor
 
 ---
 
 - **Download source code**
 
 You can obtain the source code from here, which is base on `Linux kernel 6.7-rc6`**.**
+```
+git clone https://github.com/virt-pvm/linux.git -b pvm
+```
 
 - **Build kernel and modules**
 
@@ -142,10 +148,9 @@ To build the kernel and module, please refer to the [official kernel build docum
 > **Note**: PVM is not currently available with PTI (Page Table Isolation). You can either disable PTI during the building process or disable it during the booting later.
 
 ```bash
-$ make oldefconfig 													# use old config and set new symbols to theie default values
-$ make menuconfig 					        				# select kvm-pvm module, which is
-	 																					# under Virtualization menu
-$ make -j																    # build kernel and modules
+$ make oldefconfig 							# use old config and set new symbols to theie default values
+$ make menuconfig 					        	# select kvm-pvm module, which is under Virtualization menu
+$ make -j								# build kernel and modules
 $ sudo make modules_install install					# install kernel and modules
 ```
 
@@ -161,21 +166,24 @@ $ sudo rmmod kvm-intel
 $ sudo rmmod kvm
 $ sudo modprobe kvm-pvm
 ```
-### Install PVM guest kernel
+## Install PVM guest kernel
 
 ---
 
 - **Download source code**
 
 You can obtain source code from here, which is base on `Linux kernel 6.7-rc6`**.**
+```
+git clone https://github.com/virt-pvm/linux.git -b pvm
+```
 
 - **Build kernel**
 
 To build the guest kernel, please refer to the [official kernel build documentation](https://www.kernel.org/doc/html/latest/admin-guide/README.html#documentation).  Additionally, we provide a configuration file based on the default configuration for the guest kernel from Kata Containers.
 ```bash
-$ wget 		                            # copy the customized config
+$ wget https://raw.githubusercontent.com/virt-pvm/misc/main/pvm-guest.config -O .config
 $ make olddefconfig
-$ make -j vmlinux						    		  # build kernel
+$ make -j vmlinux     # build kernel
 ```
 
 - **Install kernel**
@@ -184,11 +192,11 @@ You can move the guest kernel to the default path for Kata Containers.
 ```bash
 $ sudo cp vmlinux /opt/kata/share/kata-containers/vmlinux-pvm
 ```
-### Verify Kata Containers with PVM
+## Verify Kata Containers with PVM
 
 ---
 
-#### Configure QEMU for PVM
+## Configure QEMU for PVM
 QEMU would [override the guest cpuid](https://gitlab.com/qemu-project/qemu/-/blame/master/target/i386/kvm/kvm.c#L1861) (`KVM_CPUID_SIGNATURE`) provided by the hypervisor, so we currently need to skip the cpuid verification in the PVM guest for QEMU.
 ```c
 diff --git a/arch/x86/kernel/head64_identity.c b/arch/x86/kernel/head64_identity.c
@@ -208,7 +216,7 @@ And we only support using qboot as the BIOS for QEMU instead of SeaBIOS, so plea
 > kernel = "/opt/kata/share/kata-containers/vmlinux-pvm"
 > firmware = "/opt/kata/share/kata-qemu/qemu/qboot.rom"
 
-#### Configure Cloud Hypervisor for PVM
+## Configure Cloud Hypervisor for PVM
       Due to the [virtio-vsock issue](https://github.com/cloud-hypervisor/cloud-hypervisor/issues/5691), the rust vmm (including Dragonball, Cloud Hypervisor and Firecracker) installed in the Kata Container package cannot support PVM guest. We have only found that Cloud Hypervisor has fixed the issue, so we should use version 35.0 or higher of Cloud Hypervisor.
 ```bash
 $ sudo wget https://github.com/cloud-hypervisor/cloud-hypervisor/releases/download/v37.0/cloud-hypervisor-static -O /opt/kata/bin/cloud-hypervisor
@@ -216,7 +224,7 @@ $ sudo wget https://github.com/cloud-hypervisor/cloud-hypervisor/releases/downlo
 Then please change the guest kernel option in configuration file (`/opt/kata/share/defaults/kata-containers/configuration.toml`) .
 > kernel = "/opt/kata/share/kata-containers/vmlinux-pvm"
 
-#### Verify Kata Containers with PVM
+## Verify Kata Containers with PVM
 You can perform a simple test by running the following commands:
 ```bash
 $ image="docker.io/library/busybox:latest"
@@ -225,7 +233,7 @@ $ sudo ctr run --runtime "io.containerd.kata.v2" --rm -t "$image" test-kata date
 $ sudo ctr run --runtime "io.containerd.kata-clh.v2" --rm -t "$image" test-kata date
 ```
 	The last command above will show date information in container.
-## Verify Kata Containers with PVM using VM image
+# Verify Kata Containers with PVM using VM image
 
 ---
 
@@ -235,7 +243,8 @@ We provide a VM image based on the `Official Ubuntu Cloud Image`, which you can 
 
 You can obtain the VM image from the following url.
 ```bash
-$ wget xx -O ubuntu-22.04-pvm.img
+$ wget https://github.com/virt-pvm/misc/releases/download/test/ubuntu-22.04-pvm-kata-img.tar.gz -O ubuntu-22.04-pvm-kata-img.tar.gz
+$ tar -xzvf ubuntu-22.04-pvm-kata-img.tar.gz ubuntu-22.04-pvm-kata.img
 ```
 
 - **Start VM**
