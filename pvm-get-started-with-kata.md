@@ -190,7 +190,7 @@ $ make -j vmlinux     # build kernel
 
 You can move the guest kernel to the default path for Kata Containers.
 ```bash
-$ sudo cp vmlinux /opt/kata/share/kata-containers/vmlinux-pvm
+$ sudo cp vmlinux /opt/kata/share/kata-containers/vmlinux.pvm
 ```
 ## Verify Kata Containers with PVM
 
@@ -199,11 +199,11 @@ $ sudo cp vmlinux /opt/kata/share/kata-containers/vmlinux-pvm
 ## Configure QEMU for PVM
 QEMU would [override the guest cpuid](https://gitlab.com/qemu-project/qemu/-/blame/master/target/i386/kvm/kvm.c#L1861) (`KVM_CPUID_SIGNATURE`) provided by the hypervisor, so we currently need to skip the cpuid verification in the PVM guest for QEMU.
 ```c
-diff --git a/arch/x86/kernel/head64_identity.c b/arch/x86/kernel/head64_identity.c
-index 41167f071528..a1d3fc30d267 100644
---- a/arch/x86/kernel/head64_identity.c
-+++ b/arch/x86/kernel/head64_identity.c
-@@ -417,6 +417,7 @@ static bool __head detect_pvm(void)
+diff --git a/arch/x86/include/asm/pvm_para.h b/arch/x86/include/asm/pvm_para.h
+index 9484a1a23568..2a9b48b66618 100644
+--- a/arch/x86/include/asm/pvm_para.h
++++ b/arch/x86/include/asm/pvm_para.h
+@@ -51,6 +51,7 @@ static inline bool pvm_detect(void)
         if ((cs & 3) != 3)
                 return false;
 
@@ -213,7 +213,7 @@ index 41167f071528..a1d3fc30d267 100644
         pvm_cpuid(&eax, &signature[0], &signature[1], &signature[2]);
 ```
 And we only support using qboot as the BIOS for QEMU instead of SeaBIOS, so please change the configuration file (`/opt/kata/share/defaults/kata-containers/configuration.toml`) to use qboot. Additionally, please change the guest kernel path option too.
-> kernel = "/opt/kata/share/kata-containers/vmlinux-pvm"
+> kernel = "/opt/kata/share/kata-containers/vmlinux-pvm"   
 > firmware = "/opt/kata/share/kata-qemu/qemu/qboot.rom"
 
 ## Configure Cloud Hypervisor for PVM
