@@ -3,13 +3,13 @@ This document provides an overview on how to run Kata Containers with PVM hyperv
 
 ---
 
-`PVM` is a software virtualization technology that is purpose-built to support Kata Containers without the need for hardware virtualization assistance. It is designed as a vendor for KVM, similar to Intel and AMD, making it compatible with the software stack in Kata Containers.
+`PVM` is a software virtualization technology that is purpose-built to support `Kata Containers` without the need for hardware virtualization assistance. It is designed as a vendor for `KVM`, similar to `Intel` and `AMD`, making it compatible with the software stack in `Kata Containers`.
 
 # Pre-requisites
 
 ---
 
-This document requires the presence of Kata Containers and Containerd on your system. If you have the necessary environment set up, you can proceed directly to the [PVM configuration](#configure-pvm).
+This document requires the presence of `Kata Containers` and `Containerd` on your system. If you have the necessary environment set up, you can proceed directly to the [PVM configuration](#configure-pvm).
 
 Since the PVM hypervisor is based on `Linux kernel 6.7-rc6`, if you only want to test it, we also provide a pre-configured VM image with Kata Containers and PVM. You can directly proceed to [verify using the VM image](#verify-kata-containers-with-pvm-using-vm-image).
 # Configure Kata Containers and Containerd
@@ -107,10 +107,19 @@ Finally, start the Containerd service.
 $ sudo systemctl start containerd
 $ sudo systemctl enable containerd
 ```
+
 ## Verify the installation with KVM
 
 ---
 
+- **Download nerdctl**  
+It is recommended to use nerdctl CLI to test containers with containerd.
+```bash
+$ wget https://github.com/containerd/nerdctl/releases/download/v1.7.5/nerdctl-1.7.5-linux-amd64.tar.gz
+$ sudo tar Cxzvvf /usr/local/bin nerdctl-1.7.5-linux-amd64.tar.gz
+```
+
+- **Verify**  
 You are now ready to run Kata Containers with KVM.
 First, ensure the `KVM` and `VSOCK` modules are loaded.
 ```bash
@@ -121,9 +130,9 @@ $ sudo modprobe vmw_vmci  # For cloud hypervisor
 Then you can perform a simple test by running the following commands:
 ```bash
 $ image="docker.io/library/busybox:latest"
-$ sudo ctr image pull "$image"
-$ sudo ctr run --runtime "io.containerd.kata.v2" --rm -t "$image" test-kata date
-$ sudo ctr run --runtime "io.containerd.kata-clh.v2" --rm -t "$image" test-kata date
+$ sudo nerdctl image pull "$image"
+$ sudo nerdctl run --net=none --runtime "io.containerd.kata.v2" --rm -t --name test-kata "$image" date
+$ sudo nerdctl run --net=none --runtime "io.containerd.kata-clh.v2" --rm -t --name test-kata "$image" date
 ```
 The last command above will show date information in container.
 # Configure PVM
@@ -137,10 +146,11 @@ The PVM hypervisor is a Linux kernel module based on KVM. Currently, it is maint
 
 - **Download source code**
 
-You can obtain the source code from here, which is base on `Linux kernel 6.7-rc6`**.**
+You can obtain the source code from here, which is base on `Linux kernel 6.7-rc6`.
 ```
-git clone https://github.com/virt-pvm/linux.git -b pvm
+git clone https://github.com/virt-pvm/linux.git -b pvm_fix
 ```
+> **Note**: The pvm branch is the main branch and serves as the base for the patchset sent to the kernel community. The pvm_fix branch, on the other hand, contains bug fixes to the pvm branch. Whenever we attempt to send a new version, the pvm branch is rebased on the pvm_fix branch. Therefore, the pvm_fix branch always represents the latest version.
 
 - **Build kernel and modules**
 
@@ -172,9 +182,9 @@ $ sudo modprobe kvm-pvm
 
 - **Download source code**
 
-You can obtain source code from here, which is base on `Linux kernel 6.7-rc6`**.**
+You can obtain source code from here, which is base on `Linux kernel 6.7-rc6`.
 ```
-git clone https://github.com/virt-pvm/linux.git -b pvm
+git clone https://github.com/virt-pvm/linux.git -b pvm_fix
 ```
 
 - **Build kernel**
@@ -216,6 +226,9 @@ And we only support using qboot as the BIOS for QEMU instead of SeaBIOS, so plea
 > kernel = "/opt/kata/share/kata-containers/vmlinux.pvm"
 > firmware = "/opt/kata/share/kata-qemu/qemu/qboot.rom"
 
+In addition, there are some issues when using QEMU with PVM. If you wish to test QEMU with `snapshot` and `migration`, we recommend either picking the [commits](https://github.com/qemu/qemu/compare/master...virt-pvm:qemu:pvm_qemu_migration) from our QEMU repository or using the pre-built binary provided in our [package](https://github.com/virt-pvm/misc/releases/download/test/pvm-kata-vm-img.tar.gz).
+
+
 ## Configure Cloud Hypervisor for PVM
 Due to the [virtio-vsock issue](https://github.com/cloud-hypervisor/cloud-hypervisor/issues/5691), the rust vmm (including Dragonball, Cloud Hypervisor and Firecracker) installed in the Kata Container package cannot support PVM guest. We have only found that Cloud Hypervisor has fixed the issue, so we should use version 35.0 or higher of Cloud Hypervisor.
 ```bash
@@ -224,13 +237,20 @@ $ sudo wget https://github.com/cloud-hypervisor/cloud-hypervisor/releases/downlo
 Then please change the guest kernel option in configuration file (`/opt/kata/share/defaults/kata-containers/configuration.toml`) .
 > kernel = "/opt/kata/share/kata-containers/vmlinux.pvm"
 
+**Note：Due to this [issue](https://github.com/virt-pvm/linux/issues/1), the guest fails to boot successfully when using Cloud Hypervisor with a virtio-pmem rootfs under PVM.
+However, the workaround in the issue cannot be utilized by Kata Containers at the moment. Therefore, if you wish to test Cloud Hypervisor for PVM, you must use the modified runtime
+binary provided in our [package](https://github.com/virt-pvm/misc/releases/download/test/pvm-kata-vm-img.tar.gz).
+And add the following option in configuration file.**
+
+> max_phys_bits=43
+
 ## Verify Kata Containers with PVM
 You can perform a simple test by running the following commands:
 ```bash
 $ image="docker.io/library/busybox:latest"
-$ sudo ctr image pull "$image"
-$ sudo ctr run --runtime "io.containerd.kata.v2" --rm -t "$image" test-kata date
-$ sudo ctr run --runtime "io.containerd.kata-clh.v2" --rm -t "$image" test-kata date
+$ sudo nerdctl image pull "$image"
+$ sudo nerdctl run --net=none --runtime "io.containerd.kata.v2" --rm -t --name test-kata "$image" date
+$ sudo nerdctl run --net=none --runtime "io.containerd.kata-clh.v2" --rm -t --name test-kata "$image" date
 ```
 The last command above will show date information in container.
 # Verify Kata Containers with PVM using VM image
@@ -243,13 +263,13 @@ We provide a VM image based on the `Official Ubuntu Cloud Image`, which you can 
 
 You can obtain the VM image from the following url.
 ```bash
-$ wget https://github.com/virt-pvm/misc/releases/download/test/ubuntu-22.04-pvm-kata-img.tar.gz -O ubuntu-22.04-pvm-kata-img.tar.gz
-$ tar -xzvf ubuntu-22.04-pvm-kata-img.tar.gz
+$ wget https://github.com/virt-pvm/misc/releases/download/test/pvm-kata-vm-img.tar.gz -O pvm-kata-vm-img.tar.gz
+$ tar -xzvf pvm-kata-vm-img.tar.gz
 ```
 
 - **Start VM**
 
-	You can use QEMU to boot it, and run the previous test command. Then, login with the `root` account and the default password is "`root`".
+You can use QEMU to boot it, and run the previous test command. Then, login with the `root` account and the default password is "`root`".
 ```bash
 qemu-system-x86_64 -machine accel=kvm \
 	-cpu host \
@@ -266,7 +286,7 @@ qemu-system-x86_64 -machine accel=kvm \
 You can perform a simple test by running the following commands:
 ```bash
 $ image="docker.io/library/busybox:latest"
-$ sudo ctr run --runtime "io.containerd.kata.v2" --rm -t "$image" test-kata date
-$ sudo ctr run --runtime "io.containerd.kata-clh.v2" --rm -t "$image" test-kata date
+$ sudo nerdctl run --net=none --runtime "io.containerd.kata.v2" --rm -t --name test-kata "$image" date
+$ sudo nerdctl run --net=none --runtime "io.containerd.kata-clh.v2" --rm -t --name test-kata "$image" date
 ```
 The last command above will show date information in container.
