@@ -148,9 +148,8 @@ The PVM hypervisor is a Linux kernel module based on KVM. Currently, it is maint
 
 You can obtain the source code from here, which is base on `Linux kernel 6.7-rc6`.
 ```
-git clone https://github.com/virt-pvm/linux.git -b pvm_fix
+git clone https://github.com/virt-pvm/linux.git -b pvm
 ```
-> **Note**: The pvm branch is the main branch and serves as the base for the patchset sent to the kernel community. The pvm_fix branch, on the other hand, contains bug fixes to the pvm branch. Whenever we attempt to send a new version, the pvm branch is rebased on the pvm_fix branch. Therefore, the pvm_fix branch always represents the latest version.
 
 - **Build kernel and modules**
 
@@ -184,7 +183,7 @@ $ sudo modprobe kvm-pvm
 
 You can obtain source code from here, which is base on `Linux kernel 6.7-rc6`.
 ```
-git clone https://github.com/virt-pvm/linux.git -b pvm_fix
+git clone https://github.com/virt-pvm/linux.git -b pvm
 ```
 
 - **Build kernel**
