@@ -206,26 +206,11 @@ $ sudo cp vmlinux /opt/kata/share/kata-containers/vmlinux.pvm
 ---
 
 ## Configure QEMU for PVM
-QEMU would [override the guest cpuid](https://gitlab.com/qemu-project/qemu/-/blame/master/target/i386/kvm/kvm.c#L1861) (`KVM_CPUID_SIGNATURE`) provided by the hypervisor, so we currently need to skip the cpuid verification in the PVM guest for QEMU.
-```c
-diff --git a/arch/x86/include/asm/pvm_para.h b/arch/x86/include/asm/pvm_para.h
-index 9484a1a23568..2a9b48b66618 100644
---- a/arch/x86/include/asm/pvm_para.h
-+++ b/arch/x86/include/asm/pvm_para.h
-@@ -51,6 +51,7 @@ static inline bool pvm_detect(void)
-        if ((cs & 3) != 3)
-                return false;
-
-+       return true;
-        /* check KVM_SIGNATURE and KVM_CPUID_VENDOR_FEATURES */
-        eax = KVM_CPUID_SIGNATURE;
-        pvm_cpuid(&eax, &signature[0], &signature[1], &signature[2]);
-```
-And we only support using qboot as the BIOS for QEMU instead of SeaBIOS, so please change the configuration file (`/opt/kata/share/defaults/kata-containers/configuration.toml`) to use qboot. Additionally, please change the guest kernel path option too.
-> kernel = "/opt/kata/share/kata-containers/vmlinux.pvm"
+We only support using qboot as the BIOS for QEMU instead of SeaBIOS, so please change the configuration file (`/opt/kata/share/defaults/kata-containers/configuration.toml`) to use qboot. Additionally, please change the guest kernel path option too.
+> kernel = "/opt/kata/share/kata-containers/vmlinux.pvm"  
 > firmware = "/opt/kata/share/kata-qemu/qemu/qboot.rom"
 
-In addition, there are some issues when using QEMU with PVM. If you wish to test QEMU with `snapshot` and `migration`, we recommend either picking the [commits](https://github.com/qemu/qemu/compare/master...virt-pvm:qemu:pvm_qemu_migration) from our QEMU repository or using the pre-built binary provided in our [package](https://github.com/virt-pvm/misc/releases/download/test/pvm-kata-vm-img.tar.gz).
+In addition, there are some issues when using QEMU with PVM. If you wish to test QEMU with `snapshot` and `migration`, we recommend either picking the [commits](https://github.com/qemu/qemu/compare/master...virt-pvm:qemu:pvm_qemu_migration) from our QEMU repository.
 
 
 ## Configure Cloud Hypervisor for PVM
