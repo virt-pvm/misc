@@ -11,7 +11,7 @@ This document provides an overview on how to run Kata Containers with PVM hyperv
 
 This document requires the presence of `Kata Containers` and `Containerd` on your system. If you have the necessary environment set up, you can proceed directly to the [PVM configuration](#configure-pvm).
 
-Since the PVM hypervisor is based on `Linux kernel 6.7-rc6`, if you only want to test it, we also provide a pre-configured VM image with Kata Containers and PVM. You can directly proceed to [verify using the VM image](#verify-kata-containers-with-pvm-using-vm-image).
+The current PVM involves modifications to the host and guest kernels. We have implemented support for two versions: `6.12.33` and `6.7.0-rc7`. When the guest kernel uses version `6.12.33`, the Kata Containers need to be version `3.14` or later. if you only want to test it, we also provide a pre-configured VM image with Kata Containers and PVM. You can directly proceed to [verify using the VM image](#verify-kata-containers-with-pvm-using-vm-image).
 # Configure Kata Containers and Containerd
 
 ---
@@ -23,14 +23,14 @@ You can follow the [offical guide](https://github.com/kata-containers/kata-conta
 
 - **Download a release**
 
-You can get a release from the [offical release url](https://github.com/kata-containers/kata-containers/releases), choose a latest release version (eg: 3.2.0).
+You can get a release from the [offical release url](https://github.com/kata-containers/kata-containers/releases), choose a latest release version (eg: 3.19.1).
 ```bash
-$ wget https://github.com/kata-containers/kata-containers/releases/download/3.2.0/kata-static-3.2.0-amd64.tar.xz
+$ wget https://github.com/kata-containers/kata-containers/releases/download/3.19.1/kata-static-3.19.1-amd64.tar.xz
 ```
 
 - **Unpack the downloaded archive**
 ```bash
-$ sudo tar -C / -xvf kata-static-3.2.0-amd64.tar.xz
+$ sudo tar -C / -xvf kata-static-3.19.1-amd64.tar.xz
 ```
 After unpacking the downloaded archive, you will find the binaries in the /opt/kata/bin directory. It is recommended by Kata Containers to create symbolic links for these binaries, so that Containerd can locate them.
 ```bash
@@ -146,9 +146,9 @@ The PVM hypervisor is a Linux kernel module based on KVM. Currently, it is maint
 
 - **Download source code**
 
-You can obtain the source code from here, which is base on `Linux kernel 6.7-rc6`.
+You can obtain the source code from here, which is base on `Linux kernel 6.12.33`.
 ```
-git clone https://github.com/virt-pvm/linux.git -b pvm
+git clone https://github.com/virt-pvm/linux.git -b pvm-612
 ```
 
 - **Build kernel and modules**
@@ -181,9 +181,9 @@ $ sudo modprobe kvm-pvm
 
 - **Download source code**
 
-You can obtain source code from here, which is base on `Linux kernel 6.7-rc6`.
+You can obtain source code from here, which is base on `Linux kernel 6.12.33`.
 ```
-git clone https://github.com/virt-pvm/linux.git -b pvm
+git clone https://github.com/virt-pvm/linux.git -b pvm-612
 ```
 
 - **Build kernel**
