@@ -190,7 +190,7 @@ git clone https://github.com/virt-pvm/linux.git -b pvm-612
 
 To build the guest kernel, please refer to the [official kernel build documentation](https://www.kernel.org/doc/html/latest/admin-guide/README.html#documentation).  Additionally, we provide a configuration file based on the default configuration for the guest kernel from Kata Containers.
 ```bash
-$ wget https://raw.githubusercontent.com/virt-pvm/misc/main/pvm-guest.config -O .config
+$ wget https://raw.githubusercontent.com/virt-pvm/misc/main/pvm-guest-6.12.33.config -O .config
 $ make olddefconfig
 $ make -j vmlinux     # build kernel
 ```
